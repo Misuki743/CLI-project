@@ -31,14 +31,14 @@ fn print_description() {
   println!("  query difficulty [flags...]    query problems satisfy the requirement and certain integer difficulty.");
   println!();
   println!("Some flags for query command:");
-  println!("  -d1: query div. 1 problems.");
-  println!("  -d2: query div. 2 problems.");
-  println!("  -d12: query div. 1 + 2 problems.");
-  println!("  -edu: query educational problems.");
-  println!("  -gl: query global round problems.");
-  println!("  -other: query problems that are not fall into the above categories.");
-  println!("  -old: allow query old problems.");
-  println!("  -rec: query the most recent 10 problems satisfy the requirement.");
+  println!("  -d1       query div. 1 problems.");
+  println!("  -d2       query div. 2 problems.");
+  println!("  -d12      query div. 1 + 2 problems.");
+  println!("  -edu      query educational problems.");
+  println!("  -gl       query global round problems.");
+  println!("  -other    query problems that are not fall into the above categories.");
+  println!("  -old      allow query old problems.");
+  println!("  -rec      query the most recent 10 problems satisfy the requirement.");
 }
 
 fn print_guide() {

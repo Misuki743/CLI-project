@@ -153,6 +153,7 @@ impl User {
   }
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct ProblemRecommender {
   handle: String,
