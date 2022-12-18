@@ -29,6 +29,8 @@ fn print_description() {
   println!("  drop                           unbind the problem, this will not change your Elo rating of practice.");
   println!("  update                         pull data from codeforces API, this may take a while.");
   println!("  query difficulty [flags...]    query problems satisfy the requirement and certain integer difficulty.");
+  println!("  upsolveList                    show the problems on the upsolve list.");
+  println!("  upsolved problem_id            remove the problem from the upsolve list.");
   println!();
   println!("Some flags for query command:");
   println!("  -d1       query div. 1 problems.");
@@ -98,15 +100,27 @@ fn query_problems(args: &Vec<String>, problems: &Vec<Problem>, user_handle: &Str
 
 fn print_problems(problems: &Vec<Problem>) {
   println!();
-  println!("|            problem name            | rating | contest name");
+  println!("|            problem name            | rating |   id   | contest name");
   for element in problems {
     let contest_id = "#".to_owned() + &element.contest_id.to_string();
     let url = element.problem_url();
     let problem_name = format!("{:^36}", element.name);
     let hyper_link = Link::new(&problem_name[..], &url);
-    println!("|{:^36}|{:^8}| {}", hyper_link, element.rating, element.contest_name);
+    println!("|{:^36}|{:^8}|{:^8}| {}", hyper_link, element.rating, element.combined_id(), element.contest_name);
   }
   println!();
+}
+
+fn upsolve_problems(problems: &Vec<Problem>, user_handle: &String) -> Vec<Problem> {
+  let mut res: Vec<Problem> = Vec::new();
+  let upsolve_set = User::new(user_handle).upsolve_problems;
+  for element in problems {
+    if upsolve_set.contains(&element.combined_id()) {
+      res.push(element.clone()); 
+    }
+  }
+
+  res
 }
 
 #[derive(EnumString)]
@@ -125,6 +139,10 @@ enum Command {
   Update,
   #[strum(serialize = "query")]
   Query,
+  #[strum(serialize = "upsolveList")]
+  UpsolveList,
+  #[strum(serialize = "upsolved")]
+  Upsolved,
 }
 
 #[derive(EnumString)]
@@ -168,6 +186,8 @@ fn main() {
       Command::Unbind => recommender.drop_problem(),
       Command::Update => update_all_DTOs(&user_handle),
       Command::Query if args.len() >= 3 => print_problems(&query_problems(&args, &problems, &user_handle)),
+      Command::UpsolveList => print_problems(&upsolve_problems(&problems, &user_handle)),
+      Command::Upsolved if args.len() >= 3 => User::new(&user_handle).delete_unsolved_problem(&args[2]),
       _ => print_guide(),
     }, 
     Err(error) => print_guide(),

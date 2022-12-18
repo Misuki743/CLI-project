@@ -3,7 +3,7 @@ use std::{cmp, env, fs};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use rand::distributions::{Distribution, Uniform};
-use serde_json::Value;
+use serde_json::{Value, to_value};
 use serde::{Deserialize, Serialize};
 use crate::DTOs::DTOs::*;
 use strum_macros::{EnumString, Display};
@@ -123,6 +123,7 @@ pub struct User {
   pub max_rating: i64,
   pub accepted_problems: HashSet<String>,
   pub excluded_problems: HashSet<String>,
+  pub upsolve_problems: HashSet<String>,
 }
 
 impl User {
@@ -144,11 +145,37 @@ impl User {
       }
     }
 
+    let mut upsolve_problems: HashSet<String> = HashSet::new();
+    if Path::new(&("upsolve")).exists() {
+      let res: Value = serde_json::from_str(&fs::read_to_string(&("upsolve")).expect("read upsolve list"))
+                       .expect("convert str to json");
+      for element in res.as_array().unwrap() {
+        upsolve_problems.insert(element.as_str().unwrap().to_string());  
+      }
+    }
+
     User {
       handle: handle.clone(),
       max_rating: UserInfoDTO::new(&handle).max_rating,
       accepted_problems,
       excluded_problems,
+      upsolve_problems,
+    }
+  }
+
+  pub fn add_unsolved_problem(&mut self, problem: &Problem) {
+    self.upsolve_problems.insert(problem.combined_id());
+    let res: Value = to_value(self.upsolve_problems.clone()).unwrap();
+    fs::write("upsolve", res.to_string()).ok();
+  }
+
+  pub fn delete_unsolved_problem(&mut self, problem_combined_id: &String) {
+    if self.upsolve_problems.remove(problem_combined_id) {
+      let res: Value = to_value(self.upsolve_problems.clone()).unwrap();
+      fs::write("upsolve", res.to_string()).ok();
+      println!("Remove the problem from the upsolve list.");
+    } else {
+      println!("Can't find the problem in the upsolve list!");
     }
   }
 }
@@ -260,6 +287,7 @@ impl ProblemRecommender {
       println!("Don't have a binded problem!");
     } else {
       self.rating_change(false);
+      User::new(&self.handle).add_unsolved_problem(&self.bind_problem);
       self.bind_problem = Problem::unit();
       self.streak = cmp::min(self.streak - 1, -1);
       self.save();
@@ -334,7 +362,8 @@ pub fn filter_problems(problems: &Vec<Problem>, options: &FilterOptions) -> Vec<
       Division::Other => other,
     };
     valid = valid && if let Some(tmp) = &options.user {
-      !tmp.accepted_problems.contains(&problem.combined_id()) && !tmp.excluded_problems.contains(&problem.combined_id())
+      !tmp.accepted_problems.contains(&problem.combined_id()) && !tmp.excluded_problems.contains(&problem.combined_id()) &&
+      !tmp.upsolve_problems.contains(&problem.combined_id())
     } else {
       true
     };
